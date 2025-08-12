@@ -7,10 +7,6 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -33,16 +29,16 @@ public class WebOAuthSecurityConfig {
         return http.build();
     }
 
-    // 전역 CORS (컨트롤러 @CrossOrigin 없이도 동작)
-    @Bean
-    CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://127.0.0.1:5500", "http://localhost:5500")); // 허용 Origin
-        config.setAllowedMethods(List.of("GET", "POST", "OPTIONS")); // 허용 HTTP Method
-        config.setAllowedHeaders(List.of("*")); // 허용 Header
-        config.setAllowCredentials(true); // 쿠키·인증 정보 허용
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config); // 모든 경로에 적용
-        return source;
-    }
+    // 전역 CORS (컨트롤러 @CrossOrigin 없이도 동작) 백엔드랑 프론트랑 포트가 다를 때 필요.
+//    @Bean
+//    CorsConfigurationSource corsConfigurationSource() {
+//        CorsConfiguration config = new CorsConfiguration();
+//        config.setAllowedOrigins(List.of("http://127.0.0.1:5500", "http://localhost:5500")); // 허용 Origin
+//        config.setAllowedMethods(List.of("GET", "POST", "OPTIONS")); // 허용 HTTP Method
+//        config.setAllowedHeaders(List.of("*")); // 허용 Header
+//        config.setAllowCredentials(true); // 쿠키·인증 정보 허용
+//        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+//        source.registerCorsConfiguration("/**", config); // 모든 경로에 적용
+//        return source;
+//    }
 }
