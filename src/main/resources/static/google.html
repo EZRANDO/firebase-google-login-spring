@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Google 로그인(Compat)</title>
+
+    <!-- 폰트 -->
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Firebase compat -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+    <style>
+        :root{
+            --bg1: #0f172a; /* slate-900 */
+            --bg2: #1e293b; /* slate-800 */
+            --card: rgba(255,255,255,0.08);
+            --border: rgba(255,255,255,0.12);
+            --text: #e5e7eb; /* zinc-200 */
+            --muted: #94a3b8; /* slate-400 */
+            --accent: #60a5fa; /* blue-400 */
+            --shadow: 0 8px 30px rgba(0,0,0,0.35);
+            --radius: 16px;
+        }
+        @media (prefers-color-scheme: light) {
+            :root{
+                --bg1: #e8f0ff;
+                --bg2: #fafcff;
+                --card: rgba(255,255,255,0.75);
+                --border: rgba(0,0,0,0.06);
+                --text: #0b1220;
+                --muted: #475569;
+                --accent: #2563eb;
+                --shadow: 0 10px 30px rgba(31,41,55,0.15);
+            }
+        }
+
+        *{ box-sizing: border-box; }
+        html,body{
+            height: 100%;
+            margin: 0;
+            font-family: "Pretendard", system-ui, -apple-system, Segoe UI, Roboto, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+            color: var(--text);
+            background:
+                    radial-gradient(1200px 600px at 10% 10%, rgba(99,102,241,0.18), transparent 60%),
+                    radial-gradient(1000px 500px at 90% 20%, rgba(56,189,248,0.18), transparent 60%),
+                    linear-gradient(180deg, var(--bg1), var(--bg2));
+        }
+
+        .wrap{
+            min-height: 100%;
+            display: grid;
+            place-items: center;
+            padding: 32px;
+        }
+
+        .card{
+            width: 100%;
+            max-width: 720px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(8px);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .hero{
+            position: relative;
+            padding: 40px 32px 24px;
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 24px;
+        }
+        @media (max-width: 720px){
+            .hero{ grid-template-columns: 1fr; padding: 28px 22px 16px; }
+        }
+
+        .title{
+            font-weight: 700;
+            font-size: clamp(22px, 3vw, 28px);
+            line-height: 1.2;
+            letter-spacing: -0.2px;
+            margin: 0 0 10px;
+        }
+        .desc{
+            color: var(--muted);
+            margin: 0 0 18px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .badge{
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: rgba(255,255,255,0.06);
+            font-weight: 600;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .illus{
+            display: grid;
+            place-items: center;
+            padding: 10px;
+        }
+        .illus svg{
+            width: 100%;
+            max-width: 260px;
+            height: auto;
+            opacity: 0.9;
+            filter: drop-shadow(0 10px 22px rgba(0,0,0,0.18));
+        }
+
+        .panel{
+            padding: 20px 22px 28px;
+            border-top: 1px dashed var(--border);
+            display: grid;
+            gap: 12px;
+        }
+
+        .btn{
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: white;
+            color: #0b1220;
+            font-weight: 700;
+            letter-spacing: -0.2px;
+            cursor: pointer;
+            transition: transform .06s ease, box-shadow .2s ease, background .2s ease;
+            box-shadow: 0 6px 18px rgba(2,6,23,0.08);
+            user-select: none;
+        }
+        .btn:hover{ transform: translateY(-1px); box-shadow: 0 10px 26px rgba(2,6,23,0.12); }
+        .btn:active{ transform: translateY(0); box-shadow: 0 4px 12px rgba(2,6,23,0.10); }
+        .btn[disabled]{
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .btn .spinner{
+            width: 18px; height: 18px; border-radius: 999px;
+            border: 2px solid #e5e7eb; border-top-color: var(--accent);
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+        .btn.loading .spinner{ display: inline-block; }
+        .btn.loading .label{ opacity: 0.75; }
+
+        @keyframes spin{ to { transform: rotate(360deg); } }
+
+        .hint{
+            font-size: 12px;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        .footer{
+            padding: 16px 22px 22px;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            color: var(--muted);
+            font-size: 12px;
+            border-top: 1px solid var(--border);
+        }
+        .footer a{ color: var(--accent); text-decoration: none; }
+        .footer a:hover{ text-decoration: underline; }
+
+        .g-logo{
+            width: 18px; height: 18px; display: inline-block;
+        }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="card">
+        <div class="hero">
+            <div>
+                <div class="badge">
+                    <!-- 작은 아이콘 -->
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M12 3l2.4 4.86 5.37.78-3.88 3.78.92 5.35L12 15.9l-4.81 2.87.92-5.35L4.23 8.64l5.37-.78L12 3z" stroke="currentColor" stroke-width="1.4"/>
+                    </svg>
+                    안전한 Google 인증
+                </div>
+                <h1 class="title">한 번 클릭으로 빠르게 로그인</h1>
+                <p class="desc">
+                    Google 계정으로 로그인하여 서비스를 바로 이용하실 수 있습니다.
+                    인증은 Firebase로 처리되고, 발급된 ID 토큰을 스프링 서버로 전달합니다.
+                </p>
+            </div>
+
+            <!-- 장식 일러스트 -->
+            <div class="illus" aria-hidden="true">
+                <svg viewBox="0 0 320 240">
+                    <defs>
+                        <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0" stop-color="#60a5fa" stop-opacity="0.95"/>
+                            <stop offset="1" stop-color="#a78bfa" stop-opacity="0.95"/>
+                        </linearGradient>
+                    </defs>
+                    <rect x="20" y="24" rx="18" ry="18" width="280" height="190" fill="url(#g1)" opacity="0.85"/>
+                    <g fill="white" opacity="0.9">
+                        <rect x="44" y="52" rx="8" width="232" height="24" opacity="0.25"/>
+                        <rect x="44" y="86" rx="8" width="160" height="24" opacity="0.25"/>
+                        <rect x="44" y="120" rx="8" width="180" height="24" opacity="0.25"/>
+                        <rect x="44" y="154" rx="8" width="120" height="24" opacity="0.25"/>
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <div class="panel">
+            <button id="btn" class="btn" type="button" aria-label="Google로 로그인">
+                <!-- Google 'G' 로고 (SVG) -->
+                <svg class="g-logo" viewBox="0 0 533.5 544.3" aria-hidden="true">
+                    <path fill="#EA4335" d="M533.5 278.4c0-18.6-1.7-37.1-5.2-55h-261v104h149.6c-6.5 34.9-26.1 64.5-55.7 84.2v69h90.1c52.7-48.6 82.2-120.3 82.2-202.2z"/>
+                    <path fill="#34A853" d="M267.3 544.3c74.2 0 136.5-24.6 182-66.7l-90.1-69c-25 17-57.2 27-91.9 27-70.6 0-130.5-47.7-152-111.8h-93.7v70.4c45.1 89.2 137.8 149.1 245.7 149.1z"/>
+                    <path fill="#4A90E2" d="M115.3 323.8c-10.3-30.9-10.3-64.8 0-95.7v-70.4h-93.7C-17.8 208.1-17.8 336.2 21.6 423.2l93.7-99.4z"/>
+                    <path fill="#FBBC05" d="M267.3 106.2c38.9-.6 76.3 13.7 105 40.3l78.3-78.3C395.7 22.7 333.3-2 259.1 0.2 151.2 0.2 58.5 60.1 13.4 149.3l101.9 78.8c21.5-64.1 81.4-121.7 152-121.9z"/>
+                </svg>
+                <span class="label">Google로 로그인</span>
+                <span class="spinner" aria-hidden="true"></span>
+            </button>
+            <div class="hint">로그인 진행 중 브라우저 팝업이 차단되지 않았는지 확인해 주세요.</div>
+        </div>
+
+        <div class="footer">
+            <span>© <span id="year"></span> Your Service</span>
+            <span>문제 발생 시 <a href="#" onclick="location.reload()">새로고침</a> 또는 팝업 허용 설정을 확인하세요.</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 연도 표시
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // 클릭 핸들러 바인딩 확인 로그
+    document.getElementById('btn').addEventListener('click', () => console.log('클릭됨'));
+
+    // Firebase 설정
+    const firebaseConfig = {
+        apiKey: "AIzaSyDUMMY-EXAMPLE-KEY1234567890abcd",
+        authDomain: "your-project-id.firebaseapp.com",
+        projectId: "your-project-id",
+        storageBucket: "your-project-id.appspot.com",
+        messagingSenderId: "123456789000",
+        appId: "1:123456789000:web:abcdef123456",
+        measurementId: "G-ABCDEFG123"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const provider = new firebase.auth.GoogleAuthProvider();
+
+    const btn = document.getElementById('btn');
+
+    async function loginWithGoogle() {
+        try {
+            // 로딩 상태
+            btn.classList.add('loading');
+            btn.setAttribute('disabled', 'true');
+
+            const cred = await auth.signInWithPopup(provider);
+            const idToken = await cred.user.getIdToken();
+            console.log('Firebase ID Token:', idToken);
+
+            // 상대경로: 스프링 서버(8080 등)만 켜져 있어도 동작
+            const res = await fetch('http://localhost:8080/api/auth/firebase-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idToken })
+            });
+
+            if (!res.ok) {
+                const t = await res.text().catch(()=> '');
+                throw new Error(`서버 오류(${res.status}) ${t}`);
+            }
+
+            const data = await res.json();
+            console.log('Spring 서버 응답:', data);
+            alert(`${data.username || '사용자'}님 환영합니다!`);
+        } catch (e) {
+            console.error('로그인 실패:', e);
+            alert('로그인 실패: ' + (e?.message ?? '알 수 없는 오류'));
+        } finally {
+            // 로딩 해제
+            btn.classList.remove('loading');
+            btn.removeAttribute('disabled');
+        }
+    }
+
+    // 기존 요구사항 유지: onclick으로 연결
+    btn.onclick = loginWithGoogle;
+</script>
+</body>
+</html>
